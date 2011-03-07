@@ -10,7 +10,7 @@ def format_v2c_trap(trap)
 end
 
 log = Logger.new(STDOUT)
-m = SNMP::TrapManager.new(:Port => 1062) do |manager|
+m = SNMP::TrapListener.new(:Port => 1062) do |manager|
   manager.on_trap_v1 do |trap|
     log.info format_v1_trap(trap)
   end
