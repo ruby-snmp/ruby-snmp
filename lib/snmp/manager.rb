@@ -559,7 +559,7 @@ module SNMP
     class Config < Options
       option :host, :Host, 'localhost'
       option :port, :Port, 162
-      option :community, :Community, 'public'
+      option :community, :Community, [ 'public' ]
       option :server_transport, :ServerTransport, UDPServerTransport
       option :max_recv_bytes, :MaxReceiveBytes, 8000
       option :use_IPv6, :use_IPv6, false
@@ -595,6 +595,11 @@ module SNMP
       config = Config.new(options)
       @transport = config.create_transport
       @community = config.community
+      if @community.nil?
+        @community = []
+      elsif !@community.instance_of? Array
+        @community = [ @community ]
+      end
       @max_bytes = config.max_recv_bytes
       @config = config.applied_config
 
@@ -677,7 +682,7 @@ module SNMP
           data, source_ip, source_port = @transport.recvfrom(@max_bytes)
           begin
             message = Message.decode(data)
-            if @community == message.community
+            if @community.include? message.community
               trap = message.pdu
               if trap.kind_of?(InformRequest)
                 @transport.send(message.response.encode, source_ip, source_port)
