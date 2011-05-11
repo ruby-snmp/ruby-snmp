@@ -156,7 +156,7 @@ Retrieve a system description.
 
   require 'snmp'
   
-  SNMP::Manager.open(:host => 'localhost') do |manager|
+  SNMP::Manager.open(:Host => 'localhost') do |manager|
       response = manager.get(["sysDescr.0", "sysName.0"])
       response.each_varbind do |vb|
           puts "#{vb.name.to_s}  #{vb.value.to_s}  #{vb.value.asn1_type}"
@@ -170,7 +170,7 @@ Create a varbind for setting the system name.
   require 'snmp'
   include SNMP
 
-  manager = Manager.new(:host => 'localhost')
+  manager = Manager.new(:Host => 'localhost')
   varbind = VarBind.new("1.3.6.1.2.1.1.5.0", OctetString.new("My System Name"))
   manager.set(varbind)
   manager.close
@@ -182,7 +182,7 @@ Walk the ifTable.
   require 'snmp'
 
   ifTable_columns = ["ifIndex", "ifDescr", "ifInOctets", "ifOutOctets"]
-  SNMP::Manager.open(:host => 'localhost') do |manager|
+  SNMP::Manager.open(:Host => 'localhost') do |manager|
       manager.walk(ifTable_columns) do |row|
           row.each { |vb| print "\t#{vb.value}" }
           puts
@@ -196,7 +196,7 @@ A more difficult way to walk the ifTable.
   require 'snmp'
   include SNMP
 
-  Manager.open(:host => 'localhost') do |manager|
+  Manager.open(:Host => 'localhost') do |manager|
       ifTable = ObjectId.new("1.3.6.1.2.1.2.2")
       next_oid = ifTable
       while next_oid.subtree_of?(ifTable)
@@ -217,7 +217,7 @@ Get interface description and admin status for 10 rows of the ifTable.
   ifDescr_OID = ObjectId.new("1.3.6.1.2.1.2.2.1.2")
   ifAdminStatus_OID = ObjectId.new("1.3.6.1.2.1.2.2.1.7")
   MAX_ROWS = 10
-  Manager.open(:host => 'localhost') do |manager|
+  Manager.open(:Host => 'localhost') do |manager|
       response = manager.get_bulk(0, MAX_ROWS, [ifDescr_OID, ifAdminStatus_OID])
       list = response.varbind_list
       until list.empty?
