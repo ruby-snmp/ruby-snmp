@@ -18,7 +18,7 @@ module SNMP
       attr_reader :alternates
 
       def option(symbol, alternate, defaulter=nil)
-        @alternates = {} unless @alternates
+        @alternates ||= {}
         @alternates[symbol] = alternate
         define_method(symbol) do
           alternate_symbol = self.class.alternates[symbol]
