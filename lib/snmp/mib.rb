@@ -56,10 +56,14 @@ module SNMP
       #   ipReasmTimeout: 1.3.6.1.2.1.4.13
       #   icmpInDestUnreachs: 1.3.6.1.2.1.5.3
       #
-      def import_module(module_file, mib_dir=DEFAULT_MIB_PATH)
+      def import_module(module_file, mib_dir=DEFAULT_MIB_PATH, preload_modules=[])
         raise "smidump tool must be installed" unless import_supported?
         FileUtils.makedirs mib_dir
-        mib_hash = `smidump -k -f python #{module_file}`
+        preload = ""
+        if(preload_modules.length > 0)
+        	preload = "-p " + preload_modules.join(" -p ")
+        end
+        mib_hash = `smidump -k -f python #{preload} #{module_file}`
         mib = eval_mib_data(mib_hash)
         if mib
           module_name = mib["moduleName"]
