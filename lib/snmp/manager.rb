@@ -292,6 +292,25 @@ module SNMP
       request = SetRequest.new(@@request_id.next, varbind_list)
       try_request(request, @write_community)
     end
+    
+    ##
+    # Uses the loaded mibs of the manager to build a varbind
+    # The second argument must be one of the SNMP::Varbind classes
+    def set_value(oid, value)
+      set(@mib.varbind(oid,value))
+    end
+
+    ##
+    # Expects an array of arrays. The first given elememt should be an oid or,
+    # if the Module is loaded the symbolic name, and the second element should be
+    # the value to be set.
+    def set_values(oid_list)
+      varbind_list = []
+      oid_list.each { |oid, value|
+        varbind_list << @mib.varbind(oid, value)
+      }
+      result = set(varbind_list)
+    end
 
     ##
     # Sends an SNMPv1 style trap.
