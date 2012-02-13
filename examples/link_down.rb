@@ -12,7 +12,7 @@ linkDown_OID = mib.oid("linkDown")
 ADMIN_UP = 1
 ADMIN_DOWN = 2
 
-listener = SNMP::TrapListener.new(:Port => 1062, :Community => 'public') do |listener|
+listener = SNMP::TrapListener.new(:port => 1062, :community => 'public') do |listener|
   log.info "Listening for linkDown traps"
   listener.on_trap(linkDown_OID) do |trap|
     vb_list = trap.vb_list

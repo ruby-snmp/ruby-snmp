@@ -3,7 +3,7 @@ include SNMP
 
 host = ARGV[0] || 'localhost'
 
-manager = Manager.new(:Host => host)
+manager = Manager.new(:host => host)
 interface_number = manager.get_value("IF-MIB::ifNumber.0").to_i
 if_descr = []
 last_varbind = "IF-MIB::ifDescr"

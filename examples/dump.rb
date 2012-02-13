@@ -3,7 +3,7 @@ include SNMP
 
 host = ARGV[0] || 'localhost'
 
-manager = Manager.new(:Host => host, :Port => 161)
+manager = Manager.new(:host => host, :port => 161)
 start_oid = ObjectId.new("1.3.6.1.2")
 next_oid = start_oid
 while next_oid.subtree_of?(start_oid)

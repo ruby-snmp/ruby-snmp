@@ -16,7 +16,7 @@ module SNMP
   end
 end
 
-SNMP::Manager.open(:Host => 'localhost', :MibModules => ["HOST-RESOURCES-MIB"]) do |snmp|
+SNMP::Manager.open(:host => 'localhost', :mib_modules => ["HOST-RESOURCES-MIB"]) do |snmp|
   response = snmp.get_value("hrSystemDate.0")
   puts response.to_date_time
 end
