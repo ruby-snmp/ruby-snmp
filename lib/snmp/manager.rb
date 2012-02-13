@@ -301,18 +301,6 @@ module SNMP
     end
 
     ##
-    # Expects an array of arrays. The first given elememt should be an oid or
-    # if the module is loaded the symbolic name and the second element should be
-    # the value to be set.
-    def set_values(oid_list)
-      varbind_list = []
-      oid_list.each { |oid, value|
-        varbind_list << @mib.varbind(oid, value)
-      }
-      set(varbind_list)
-    end
-
-    ##
     # Sends an SNMPv1 style trap.
     #
     # enterprise: The enterprise OID from the IANA assigned numbers
