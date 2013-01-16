@@ -40,10 +40,10 @@ class MismatchIdTransport
 
   def send(data, host, port)
     bad_id_data = data.dup
-    bad_msg = SNMP::Message.decode(data)
+    bad_msg = SNMP::Message.decode(bad_id_data)
     bad_msg.pdu.request_id -= 3  # corrupt request_id
     @data << bad_msg.encode # insert corrupted PDU before real data
-    @data << data
+    @data << bad_id_data
   end
 
   def recv(max_bytes)

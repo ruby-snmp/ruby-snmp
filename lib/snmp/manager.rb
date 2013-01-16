@@ -537,7 +537,7 @@ module SNMP
 
     def recvfrom(max_bytes)
       data, host_info = @socket.recvfrom(max_bytes)
-      flags, host_port, host_name, host_ip = host_info
+      _, host_port, _, host_ip = host_info
       return data, host_ip, host_port
     end
   end

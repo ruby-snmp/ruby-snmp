@@ -118,7 +118,7 @@ class ASN1_Test < Test::Unit::TestCase
 
   # Decode ASN.1 octet string
   def test_decode_octet_string
-    s, data = decode_octet_string("\004\202\000\005hello")
+    s, _ = decode_octet_string("\004\202\000\005hello")
     assert_equal("hello",s)
     assert_raise(InvalidTag) {
       decode_octet_string("\005\202\000\005hello")
@@ -126,7 +126,7 @@ class ASN1_Test < Test::Unit::TestCase
   end
 
   def test_decode_ip_address
-    ip, data = decode_ip_address("@\004\001\002\003\004")
+    ip, _ = decode_ip_address("@\004\001\002\003\004")
     assert_equal(ip, "\001\002\003\004")
     assert_raise(InvalidTag) {
       decode_ip_address("\004\004\001\002\003\004")
