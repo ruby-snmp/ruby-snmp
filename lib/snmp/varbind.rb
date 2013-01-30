@@ -9,14 +9,14 @@
 
 require 'snmp/ber'
 
-include SNMP::BER
-
 module SNMP
 
   class UnsupportedValueTag < RuntimeError; end
   class InvalidIpAddress < ArgumentError; end
 
   class VarBindList < Array
+    include SNMP::BER
+    extend SNMP::BER
     def self.decode(data, mib=nil)
       list = VarBindList.new
       varbind_data, remainder = decode_sequence(data)
@@ -58,6 +58,8 @@ module SNMP
   end
 
   class Integer
+    include SNMP::BER
+    extend SNMP::BER
     include Comparable
 
     def self.decode(value_data)
@@ -107,6 +109,8 @@ module SNMP
   end
 
   class Integer32 < Integer
+    include SNMP::BER
+    extend SNMP::BER
     def initialize(value)
       super(value)
       raise ArgumentError, "Out of range: #{value}" if value < -2147483648
@@ -115,6 +119,8 @@ module SNMP
   end
 
   class OctetString < String
+    include SNMP::BER
+    extend SNMP::BER
     def self.decode(value_data)
       OctetString.new(value_data)
     end
@@ -135,6 +141,8 @@ module SNMP
   end
 
   class ObjectId < Array
+    include SNMP::BER
+    extend SNMP::BER
     include Comparable
 
     def self.decode(value_data, mib=nil)
@@ -245,6 +253,8 @@ module SNMP
   end
 
   class IpAddress
+    include SNMP::BER
+    extend SNMP::BER
     class << self
       def decode(value_data)
         IpAddress.new(value_data, false)
@@ -334,6 +344,8 @@ module SNMP
   end
 
   class UnsignedInteger < Integer
+    include SNMP::BER
+    extend SNMP::BER
     def initialize(value)
       super(value)
       raise ArgumentError, "Negative integer invalid: #{value}" if value < 0
@@ -438,6 +450,8 @@ module SNMP
   end
 
   class Null
+    include SNMP::BER
+    extend SNMP::BER
     class << self
       def decode(value_data)
         Null
@@ -458,6 +472,8 @@ module SNMP
   end
 
   class NoSuchObject
+    include SNMP::BER
+    extend SNMP::BER
     class << self
       def decode(value_data)
         NoSuchObject
@@ -478,6 +494,8 @@ module SNMP
   end
 
   class NoSuchInstance
+    include SNMP::BER
+    extend SNMP::BER
     class << self
       def decode(value_data)
         NoSuchInstance
@@ -498,6 +516,8 @@ module SNMP
   end
 
   class EndOfMibView
+    include SNMP::BER
+    extend SNMP::BER
     class << self
       def decode(value_data)
         EndOfMibView
@@ -518,6 +538,8 @@ module SNMP
   end
 
   class VarBind
+    include SNMP::BER
+    extend SNMP::BER
     attr_accessor :name
     attr_accessor :value
 

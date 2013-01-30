@@ -10,8 +10,6 @@
 require 'snmp/ber'
 require 'snmp/varbind'
 
-include SNMP::BER
-
 module SNMP
 
   # Exceptions thrown during message/pdu decoding
@@ -27,6 +25,8 @@ module SNMP
   SNMP_TRAP_OID_OID = ObjectId.new("1.3.6.1.6.3.1.1.4.1.0")
 
   class Message
+    include SNMP::BER
+    extend SNMP::BER
     attr_reader :version
     attr_reader :community
     attr_reader :pdu
@@ -113,6 +113,8 @@ module SNMP
   end
 
   class PDU
+    include SNMP::BER
+    extend SNMP::BER
     attr_accessor :request_id
     attr_accessor :error_index
     attr_accessor :varbind_list
@@ -296,6 +298,9 @@ module SNMP
   # The PDU class for traps in SNMPv1.
   #
   class SNMPv1_Trap
+    include SNMP::BER
+    extend SNMP::BER
+
     ##
     # Returns the source IP address for the trap, usually derived from the
     # source IP address of the packet that delivered the trap.
