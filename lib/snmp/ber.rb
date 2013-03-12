@@ -1,3 +1,4 @@
+# encoding: ascii-8bit
 #
 # Copyright (c) 2004 David R. Halliday
 # All rights reserved.

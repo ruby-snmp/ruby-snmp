@@ -1,3 +1,5 @@
+# encoding: ascii-8bit
+
 require 'test/unit'
 require 'snmp/varbind'
 require 'snmp/ber'
