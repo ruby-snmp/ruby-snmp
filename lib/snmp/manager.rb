@@ -473,16 +473,16 @@ module SNMP
       @@request_id.force_next(request_id)
     end
 
+    def load_modules(module_list, mib_dir)
+      module_list.each { |m| @mib.load_module(m, mib_dir) }
+    end
+
     private
 
     def warn(message)
       trace = caller(2)
       location = trace[0].sub(/:in.*/, '')
       Kernel::warn "#{location}: warning: #{message}"
-    end
-
-    def load_modules(module_list, mib_dir)
-      module_list.each { |m| @mib.load_module(m, mib_dir) }
     end
 
     def try_request(request, community=@community, host=@host, port=@port)
