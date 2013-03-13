@@ -680,11 +680,11 @@ module SNMP
     alias kill exit
     alias terminate exit
 
-    private
-
     def load_modules(module_list, mib_dir)
       module_list.each { |m| @mib.load_module(m, mib_dir) }
     end
+
+    private
 
     def process_traps(trap_listener)
       @handler_init.call(trap_listener) if @handler_init
