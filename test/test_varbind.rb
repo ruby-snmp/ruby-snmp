@@ -211,6 +211,11 @@ class TestVarBind < Test::Unit::TestCase
     assert_not_nil(i.asn1_type)
   end
 
+  def test_integer_create_from_string
+    i = Integer.new("12345")
+    assert_equal(12345, i.to_i)
+  end
+
   def test_integer_decode
     i = Integer.decode("09")
     assert_equal(12345, i.to_i)

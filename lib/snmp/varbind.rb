@@ -109,8 +109,8 @@ module SNMP
   class Integer32 < Integer
     def initialize(value)
       super(value)
-      raise ArgumentError, "Out of range: #{value}" if value < -2147483648
-      raise ArgumentError, "Out of range: #{value}" if value > 2147483647
+      raise ArgumentError, "Out of range: #{@value}" if @value < -2147483648
+      raise ArgumentError, "Out of range: #{@value}" if @value > 2147483647
     end
   end
 
@@ -336,8 +336,8 @@ module SNMP
   class UnsignedInteger < Integer
     def initialize(value)
       super(value)
-      raise ArgumentError, "Negative integer invalid: #{value}" if value < 0
-      raise ArgumentError, "Out of range: #{value}" if value > 4294967295
+      raise ArgumentError, "Negative integer invalid: #{@value}" if @value < 0
+      raise ArgumentError, "Out of range: #{@value}" if @value > 4294967295
     end
 
     def self.decode(value_data)
@@ -428,8 +428,8 @@ module SNMP
 
     def initialize(value)
       super(value)
-      raise ArgumentError, "Negative integer invalid: #{value}" if value < 0
-      raise ArgumentError, "Out of range: #{value}" if value > 18446744073709551615
+      raise ArgumentError, "Negative integer invalid: #{@value}" if @value < 0
+      raise ArgumentError, "Out of range: #{@value}" if @value > 18446744073709551615
     end
 
     def encode
