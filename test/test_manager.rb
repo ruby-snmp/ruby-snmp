@@ -103,6 +103,10 @@ class TestManager < Test::Unit::TestCase
     assert_equal(ObjectId.new("1.2.3.4.5"), response.varbind_list[1].name)
   end
 
+  def test_get_with_nil
+    assert_raise(ArgumentError) { @manager.get(nil) }
+  end
+
   def test_get_value
     value = @manager.get_value("1.2.3.4")
     assert_equal(Null, value)
@@ -124,12 +128,20 @@ class TestManager < Test::Unit::TestCase
     assert_equal(ObjectId.new("1.2.3.4.5"), response.varbind_list[1].name)
   end
 
+  def test_get_next_with_nil
+    assert_raise(ArgumentError) { @manager.get_next(nil) }
+  end
+
   def test_set
     v0 = VarBind.new("1.3.6.1.3.1.1.1.0", OctetString.new("Hello1"))
     v1 = VarBind.new("1.3.6.1.3.1.1.1.0", OctetString.new("Hello2"))
     response = @manager.set([v0, v1])
     assert_equal("Hello1", response.varbind_list[0].value.to_s)
     assert_equal("Hello2", response.varbind_list[1].value.to_s)
+  end
+ 
+  def test_set_with_nil
+    assert_raise(ArgumentError) { @manager.set(nil) }
   end
 
   def test_single_set
@@ -147,12 +159,20 @@ class TestManager < Test::Unit::TestCase
     assert_equal("SNMPv2-SMI::experimental.1.1.2.0", response.varbind_list[1].name.to_s)
   end
 
+  def test_get_bulk_with_nil
+    assert_raise(ArgumentError) { @manager.get_bulk(nil, nil, nil) }
+  end
+
   def test_walk
     old_verbose = $VERBOSE
     $VERBOSE = nil
     @manager.walk("ifTable") { fail "Expected break from OID not increasing" }
   ensure
     $VERBOSE = old_verbose
+  end
+
+  def test_walk_with_nil
+    assert_raise(ArgumentError) { @manager.walk(nil) {} }
   end
 
   def test_request_id
@@ -188,6 +208,10 @@ class TestManager < Test::Unit::TestCase
     assert_equal(1, pdu.vb_list.length)
   end
 
+  def test_trap_v1_with_nil
+    assert_raise(ArgumentError) { @manager.trap_v1(nil) }
+  end
+
   def test_trap_v2
     sent_data = @manager.trap_v2(1234, "1.3.6.1.2.3.4")
     pdu = Message.decode(sent_data).pdu
@@ -201,6 +225,10 @@ class TestManager < Test::Unit::TestCase
     assert_equal("1.3.6.1.2.3.4", pdu.trap_oid.to_s)
     assert_equal(4, pdu.vb_list.length)
     assert_equal("1.4.5.6", pdu.vb_list.last.name.to_s)
+  end
+
+  def test_trap_v2_with_nil
+    assert_raise(ArgumentError) { @manager.trap_v2(nil, nil, nil) }
   end
 
   def test_inform

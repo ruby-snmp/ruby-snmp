@@ -170,6 +170,7 @@ module SNMP
     # - list of VarBinds
     #
     def varbind_list(object_list, option=:KeepValue)
+      raise ArgumentError, "A list of ObjectId or VarBind objects is NilClass" if object_list.nil?
       vb_list = VarBindList.new
       if object_list.respond_to? :to_str
         vb_list << oid(object_list).to_varbind

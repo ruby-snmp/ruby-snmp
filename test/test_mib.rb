@@ -57,6 +57,10 @@ module SNMP
       assert_equal("1.3.6.1.2.1.2.2.1.23", vb_list.first.name.to_s)
     end
 
+    def test_varbind_list_with_nil
+      assert_raise(ArgumentError) { @mib.varbind_list(nil) }
+    end
+
     def test_varbind
       vb = @mib.varbind("1.2.3.4", Null)
       assert_equal("1.2.3.4", vb.name.to_s)
