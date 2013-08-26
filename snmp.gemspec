@@ -1,5 +1,6 @@
 $:.unshift File.expand_path("../lib", __FILE__)
 
+require 'rake'
 require 'snmp/version'
 
 PKG_FILES = FileList[
