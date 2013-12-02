@@ -37,7 +37,15 @@ module SNMP
     end
 
     def recv(max_bytes)
-      @socket.recv(max_bytes)
+      # Implement blocking using recvfrom_nonblock to prevent potential
+      # ruby thread deadlock
+      begin
+        data, host_info = @socket.recvfrom_nonblock(max_bytes)
+        return data
+      rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+        IO.select([@socket])
+        retry
+      end
     end
   end
 
@@ -536,7 +544,14 @@ module SNMP
     end
 
     def recvfrom(max_bytes)
-      data, host_info = @socket.recvfrom(max_bytes)
+      # Implement blocking using recvfrom_nonblock to prevent potential
+      # ruby thread deadlock
+      begin
+        data, host_info = @socket.recvfrom_nonblock(max_bytes)
+      rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+        IO.select([@socket])
+        retry
+      end
       _, host_port, _, host_ip = host_info
       return data, host_ip, host_port
     end
