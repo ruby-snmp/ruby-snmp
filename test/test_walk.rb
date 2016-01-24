@@ -14,6 +14,7 @@ class YamlDataTransport
     values = YAML.load(File.new(yaml_file))
     @@get_map = {}
     @@get_next_map = {}
+    @@get_bulk_map = {}
     values.each_index do |i|
       name, value, klass = values[i]
       if i < values.length - 1
@@ -24,6 +25,7 @@ class YamlDataTransport
       end
       @@get_map[name] = [name, value, klass]
       @@get_next_map[name] = [next_name, next_value, next_klass]
+      @@get_bulk_map[name] = [next_name, next_value, next_klass]
     end
   end
 
@@ -41,20 +43,48 @@ class YamlDataTransport
       oid_map = @@get_map
     elsif req_class == SNMP::GetNextRequest
       oid_map = @@get_next_map
+    elsif req_class == SNMP::GetBulkRequest
+      oid_map = @@get_bulk_map
     else
       raise "request not supported: " + req_class
     end
 
     resp = msg.response
-    resp.pdu.vb_list.each do |vb|
-      name, value, klass = oid_map[vb.name.to_s]
-      vb.name = ObjectId.new(name)
-      if klass == "SNMP::NoSuchObject" or klass == "SNMP::NoSuchInstance"
-        vb.value = eval(klass)
-      elsif value
-        vb.value = eval("#{klass}.new(value)")
-      else
-        vb.value = SNMP::NoSuchInstance
+    if req_class == SNMP::GetBulkRequest
+      varbinds = SNMP::VarBindList.new()
+      start_vbs = msg.pdu.vb_list
+      last_vbs = start_vbs
+      i = 0
+      msg.pdu.max_repetitions.times do
+        next_vbs = SNMP::VarBindList.new()
+        last_vbs.each do |vb|
+          name, value, klass = oid_map[vb.name.to_s]
+          break if name.nil?
+          new_vb = SNMP::VarBind.new(ObjectId.new(name))
+          if klass == "SNMP::NoSuchObject" or klass == "SNMP::NoSuchInstance"
+            new_vb.value = eval(klass)
+          elsif value
+            new_vb.value = eval("#{klass}.new(value)")
+          else
+            new_vb.value = SNMP::NoSuchInstance
+          end
+          resp.pdu.vb_list[i] = new_vb
+          i += 1
+          next_vbs.push new_vb
+        end
+        last_vbs = next_vbs
+      end
+    else
+      msg.pdu.vb_list.each do |vb|
+        name, value, klass = oid_map[vb.name.to_s]
+        vb.name = ObjectId.new(name)
+        if klass == "SNMP::NoSuchObject" or klass == "SNMP::NoSuchInstance"
+          vb.value = eval(klass)
+        elsif value
+          vb.value = eval("#{klass}.new(value)")
+        else
+          vb.value = SNMP::NoSuchInstance
+        end
       end
     end
     @responses << resp.encode
@@ -82,6 +112,14 @@ class TestTransport < MiniTest::Unit::TestCase
       assert_equal("gif0", vb.vb_list.first.value)
     end
   end
+
+  # def test_get_next_bulk
+  #   YamlDataTransport.load_data(File.dirname(__FILE__) + "/if_table_bulk.yaml")
+  #   SNMP::Manager.open(:Transport => YamlDataTransport.new) do |snmp|
+  #     vb = snmp.get_next("ifDescr.1")
+  #     assert_equal("gif0", vb.vb_list.first.value)
+  #   end
+  # end
 
 end
 
@@ -177,6 +215,99 @@ class TestWalk < MiniTest::Unit::TestCase
     assert_equal(1, list.length)
   end
 
+  def test_bulk_walk
+    i = 0
+    list = []
+    ifTable_bulk_manager.bulk_walk(["ifIndex", "ifDescr", "ifType", "ifInOctets"]) do |vb|
+      case i
+      when 0
+        assert_equal("IF-MIB::ifIndex.1", vb[0].name.to_s)
+        assert_equal(1, vb[0].value)
+        assert_equal("IF-MIB::ifDescr.1", vb[1].name.to_s)
+        assert_equal("lo0", vb[1].value)
+        assert_equal("IF-MIB::ifType.1", vb[2].name.to_s)
+        assert_equal(24, vb[2].value)
+        assert_equal("IF-MIB::ifInOctets.1", vb[3].name.to_s)
+        assert_equal(18228208, vb[3].value)
+      when 2
+        assert_equal("IF-MIB::ifIndex.3", vb[0].name.to_s)
+        assert_equal(3, vb[0].value)
+        assert_equal("IF-MIB::ifDescr.3", vb[1].name.to_s)
+        assert_equal("stf0", vb[1].value)
+        assert_equal("IF-MIB::ifType.3", vb[2].name.to_s)
+        assert_equal(57, vb[2].value)
+        assert_equal("IF-MIB::ifInOctets.3", vb[3].name.to_s)
+        assert_equal(NoSuchInstance, vb[3].value)
+      end
+      list << vb
+      i += 1
+    end
+
+    assert_equal(6,list.length)
+  end
+
+  def test_bulk_walk_large
+    i = 0
+    list = []
+    ifTable_bulk_manager.bulk_walk(["ifIndex", "ifDescr", "ifType", "ifInOctets"], 0, 50) do |vb|
+      case i
+      when 0
+        assert_equal("IF-MIB::ifIndex.1", vb[0].name.to_s)
+        assert_equal(1, vb[0].value)
+        assert_equal("IF-MIB::ifDescr.1", vb[1].name.to_s)
+        assert_equal("lo0", vb[1].value)
+        assert_equal("IF-MIB::ifType.1", vb[2].name.to_s)
+        assert_equal(24, vb[2].value)
+        assert_equal("IF-MIB::ifInOctets.1", vb[3].name.to_s)
+        assert_equal(18228208, vb[3].value)
+      when 2
+        assert_equal("IF-MIB::ifIndex.3", vb[0].name.to_s)
+        assert_equal(3, vb[0].value)
+        assert_equal("IF-MIB::ifDescr.3", vb[1].name.to_s)
+        assert_equal("stf0", vb[1].value)
+        assert_equal("IF-MIB::ifType.3", vb[2].name.to_s)
+        assert_equal(57, vb[2].value)
+        assert_equal("IF-MIB::ifInOctets.3", vb[3].name.to_s)
+        assert_equal(NoSuchInstance, vb[3].value)
+      end
+      list << vb
+      i += 1
+    end
+
+    assert_equal(6,list.length)
+  end
+
+  def test_bulk_walk_small
+    i = 0
+    list = []
+    ifTable_bulk_manager.bulk_walk(["ifIndex", "ifDescr", "ifType", "ifInOctets"], 0, 1) do |vb|
+      case i
+      when 0
+        assert_equal("IF-MIB::ifIndex.1", vb[0].name.to_s)
+        assert_equal(1, vb[0].value)
+        assert_equal("IF-MIB::ifDescr.1", vb[1].name.to_s)
+        assert_equal("lo0", vb[1].value)
+        assert_equal("IF-MIB::ifType.1", vb[2].name.to_s)
+        assert_equal(24, vb[2].value)
+        assert_equal("IF-MIB::ifInOctets.1", vb[3].name.to_s)
+        assert_equal(18228208, vb[3].value)
+      when 2
+        assert_equal("IF-MIB::ifIndex.3", vb[0].name.to_s)
+        assert_equal(3, vb[0].value)
+        assert_equal("IF-MIB::ifDescr.3", vb[1].name.to_s)
+        assert_equal("stf0", vb[1].value)
+        assert_equal("IF-MIB::ifType.3", vb[2].name.to_s)
+        assert_equal(57, vb[2].value)
+        assert_equal("IF-MIB::ifInOctets.3", vb[3].name.to_s)
+        assert_equal(NoSuchInstance, vb[3].value)
+      end
+      list << vb
+      i += 1
+    end
+
+    assert_equal(6,list.length)
+  end
+
   private
 
     def ifTable1_manager
@@ -186,6 +317,11 @@ class TestWalk < MiniTest::Unit::TestCase
 
     def ifTable6_manager
       YamlDataTransport.load_data(File.dirname(__FILE__) + "/if_table6.yaml")
+      Manager.new(:Transport => YamlDataTransport.new)
+    end
+
+    def ifTable_bulk_manager
+      YamlDataTransport.load_data(File.dirname(__FILE__) + "/if_table_bulk.yaml")
       Manager.new(:Transport => YamlDataTransport.new)
     end
 end
