@@ -308,6 +308,27 @@ class TestWalk < MiniTest::Unit::TestCase
     assert_equal(6,list.length)
   end
 
+  def test_bulk_walk_single
+    i = 0
+    list = []
+    ifTable_bulk_manager.bulk_walk("ifIndex") do |vb|
+      case i
+      when 0
+        assert(vb.kind_of?(VarBind), "Expected a VarBind")
+        assert_equal("IF-MIB::ifIndex.1", vb.name.to_s)
+        assert_equal(1, vb.value)
+      when 2
+        assert(vb.kind_of?(VarBind), "Expected a VarBind")
+        assert_equal("IF-MIB::ifIndex.3", vb.name.to_s)
+        assert_equal(3, vb.value)
+      end
+      list << vb
+      i += 1
+    end
+
+    assert_equal(6,list.length)
+  end
+
   private
 
     def ifTable1_manager

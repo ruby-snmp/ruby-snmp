@@ -504,7 +504,7 @@ module SNMP
           #puts "Single VB"
           resp_vb_list.each do |resp_vb|
             # If we're not under the original tree we asked for, stop.
-            if not resp_vb.subtree_of(index_vb)
+            if not resp_vb.name.subtree_of?(index_vb.name)
               vb_list = []
               break
             end
