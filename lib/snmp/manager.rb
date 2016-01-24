@@ -459,6 +459,148 @@ module SNMP
     end
 
     ##
+    # Behaves much like walk, but uses GETBULK to get many rows at once.
+    #
+    # Some tables have a different number of rows in each column. This
+    # method assumes that the index_column is in every row. If this is not
+    # the case then data for which the index column does not exist will not
+    # be returned.
+    #
+    # If a row has no data for a particular column, it will be returned as
+    # a NoSuchInstance, just like the normal walk method.
+    #
+    def bulk_walk(object_list, index_column=0, max_rows=10)
+      raise ArgumentError, "expected a block to be given" unless block_given?
+      vb_list = @mib.varbind_list(object_list, :NullValue)
+      start_vb_list = vb_list
+      raise ArgumentError, "index_column is past end of varbind list" if index_column >= vb_list.length
+      is_single_vb = object_list.respond_to?(:to_str) ||
+        object_list.respond_to?(:to_varbind)
+
+      # The data hash is used to store all the rows as we go. The key is the
+      # index, and each item is an array of varbinds, that is turned in to a
+      # varbindlist before yielding.
+      data = {}
+
+      # The indexes array stores the list of indexes that we've collected in
+      # order of collection. This is iterated over to yield the data.
+      indexes = []
+
+      index_vb = vb_list[index_column]
+
+      # Loop while we still have things to query
+      while not vb_list.empty? do
+        # Get the data
+        response = get_bulk(0, max_rows, vb_list)
+
+        # Get the list of varbinds from the response
+        resp_vb_list = response.varbind_list
+
+        # Short cut here if the user has only asked for a single vb.
+        if is_single_vb
+          #puts "Single VB"
+          resp_vb_list.each do |resp_vb|
+            # If we're not under the original tree we asked for, stop.
+            if not resp_vb.subtree_of(index_vb)
+              vb_list = []
+              break
+            end
+
+            # Otherwise, yield this vb.
+            yield resp_vb
+          end
+
+          # Skip to the next request. Leaving vb_list unaltered.
+          next
+        end
+
+        # Start with a blank next_vb_list, which we build up as we go.
+        next_vb_list = Array.new(vb_list.count)
+
+        # Set up the columns appropriate for our request - i.e. the
+        # start_vb_list item, so we can check subtrees and get indexes etc.
+        columns = vb_list.collect do |vb|
+          start_vb_list.find {|col| vb.name.subtree_of?(col.name)}
+        end
+
+        # Walk through the responses.
+        while not resp_vb_list.empty? do
+          # Loop through the vb_list we asked for in order. We need to do this so we can find the index.
+          columns.each do |req_item|
+            # Get a vb off the response
+            resp_vb = resp_vb_list.shift
+
+            # For some reason we get a nil here if we have processed everything we were sent but have a max_rows bigger than what we've received
+            next if resp_vb.nil?
+
+            # Find the column we are supposed to be in.
+            column = start_vb_list.index (req_item)
+
+            # Try find the index, if we can't we're probably at the end of the table for that column, so stop trying to collect that column and move on.
+            begin
+              index = resp_vb.name.index(req_item.name)
+            rescue ArgumentError => e
+              next_vb_list[column] = nil
+              next
+            end
+
+            # If this is the index column, add a new entry to the indexes array.
+            if column == index_column
+              indexes.push index
+            end
+
+            if not data.has_key? index
+              # Create a new row if needed.
+              new_row_vb_list = Array.new(start_vb_list.count)
+              new_row_vb_list[column] = resp_vb
+
+              # If we're not the index column, fake one up so we can find this row later when other columns, or the index, actually arrive.
+              if column != index_column
+                index_oid = index_vb.name + index
+                #puts "Faking up an index for #{index_oid}"
+                new_row_vb_list[index_column] = VarBind.new(index_oid, NoSuchInstance).with_mib(@mib)
+              end
+
+              # Add this row to the data set.
+              data[index] = new_row_vb_list
+            else
+              # Add our vb to the data set.
+              data[index][column] = resp_vb
+            end
+
+            # Increment the next_vb_list for this entry.
+            next_vb_list[column] = resp_vb.clone
+          end
+        end
+
+        # Set the vb_list to query next to whatever non-empty items we have in our next_vb_list.
+        # Use clone here, as when we pass this to the get_bulk function it is destructive.
+        vb_list = VarBindList.new(next_vb_list.select {|vb| not vb.nil?}.collect{|vb| vb.clone})
+
+        # Go through the rows we have so far, and yield them if appropriate.
+        # We want to export all but the last index, until we are not doing
+        # any more requests, in case the agent truncates our request and we
+        # have indexes without the chance to receive data for them yet.
+        while indexes.count > 1 or (vb_list.empty? and not indexes.empty?) do
+          index = indexes.shift
+
+          # Pop this row off the data hash.
+          row = data.delete index
+
+          # Make sure we have a VarBind for every column, if not, fake one up.
+          start_vb_list.count.times do |i|
+            if row[i].nil?
+              expected_oid = start_vb_list[i].name + index
+              row[i] = VarBind.new(expected_oid, NoSuchInstance).with_mib(@mib)
+            end
+          end
+
+          yield row
+        end
+      end
+    end
+
+    ##
     # Helper method for walk.  Checks all of the VarBinds in vb_list to
     # make sure that the row indices match.  If the row index does not
     # match the index column, then that varbind is replaced with a varbind
