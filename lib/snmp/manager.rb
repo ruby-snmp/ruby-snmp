@@ -469,6 +469,9 @@ module SNMP
     # If a row has no data for a particular column, it will be returned as
     # a NoSuchInstance, just like the normal walk method.
     #
+    # The max_rows option allows tht user to choose the max number of varbinds
+    # to have the agent return per PDU.
+    #
     def bulk_walk(object_list, index_column=0, max_rows=10)
       raise ArgumentError, "expected a block to be given" unless block_given?
       vb_list = @mib.varbind_list(object_list, :NullValue)
