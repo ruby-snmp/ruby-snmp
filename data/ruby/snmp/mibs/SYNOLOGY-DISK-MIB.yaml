@@ -1,9 +1,0 @@
----
-hrStorageDescr: 1.3.6.1.2.1.25.2.3.1.3
-hrStorageAllocationUnits: 1.3.6.1.2.1.25.2.3.1.4
-hrStorageSize: 1.3.6.1.2.1.25.2.3.1.5
-hrStorageUsed: 1.3.6.1.2.1.25.2.3.1.6
-diskIODevice: 1.3.6.1.4.1.2021.13.15.1.1.2
-diskIONReadX: 1.3.6.1.4.1.2021.13.15.1.1.12
-diskIONWrittenX: 1.3.6.1.4.1.2021.13.15.1.1.13
-synoDisk: 1.3.6.1.4.1.6574.2
