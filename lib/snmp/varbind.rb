@@ -343,8 +343,184 @@ module SNMP
         end
         value_data
       end
-
   end
+
+
+  ### IPv6 support
+  #
+  # pulled from the 'ipaddr.rb' code
+  #
+  class IpAddressV6
+    class << self
+      def decode(value_data)
+        IpAddressV6.new(value_data, false)
+      end
+    end
+
+
+    def asn1_type
+      "IpAddressV6"
+    end
+
+
+    ##
+    # Create an IpAddressV6 object.  The constructor accepts either a raw
+    # four-octet string or a formatted string of integers separated by dots
+    # (i.e. "10.1.2.3").  Validation of the format can be disabled by setting
+    # the 'validate' flag to false.
+    #
+    def initialize(value_data, validate=true)
+      ip = value_data.to_str
+
+      if (validate)
+        if ip.include?( ':')
+          ip = parse_string(ip)
+        elsif ip.length != 16
+          raise InvalidIpAddress, "Expected 16 octets or formatted string, got #{value_data.inspect}"
+        end
+      end
+      @value = ip
+    end
+
+    ##
+    # Returns a raw 16-octet string representing this IpAddress.
+    #
+    def to_str
+      @value.dup
+    end
+
+
+    def _to_string(addr)
+      return  addr.bytes.map{|v| v.to_s(16)}.join(':')
+    end
+
+
+    def to_string
+      return _to_string(@value)
+    end
+
+
+    ##
+    # Returns a formatted, dot-separated string representing this IpAddress.
+    #
+    def to_s
+
+      str = to_string
+      str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
+      loop do
+        break if str.sub!(/\A0:0:0:0:0:0:0:0\z/, '::')
+        break if str.sub!(/\b0:0:0:0:0:0:0\b/, ':')
+        break if str.sub!(/\b0:0:0:0:0:0\b/, ':')
+        break if str.sub!(/\b0:0:0:0:0\b/, ':')
+        break if str.sub!(/\b0:0:0:0\b/, ':')
+        break if str.sub!(/\b0:0:0\b/, ':')
+        break if str.sub!(/\b0:0\b/, ':')
+        break
+      end
+      str.sub!(/:{3,}/, '::')
+
+      if /\A::(ffff:)?([\da-f]{1,4}):([\da-f]{1,4})\z/i =~ str
+        str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
+     end
+     str
+    end
+
+
+    def to_oid
+      oid = ObjectId.new
+      @value.each_byte { |b| oid << b }
+      oid
+    end
+
+    def ==(other)
+      if other.respond_to? :to_str
+        return @value.eql?(other.to_str)
+      else
+        return false
+      end
+    end
+
+    def eql?(other)
+      self == other
+    end
+
+    def hash
+      @value.hash
+    end
+
+    def encode
+      encode_tlv(IpAddress_TAG, @value)
+    end
+
+
+    private
+
+      # Regexp _internally_ used for parsing IPv6 address.
+      RE_IPV6ADDRLIKE_FULL = %r{
+        \A
+        (?:
+          (?: [\da-f]{1,4} : ){7} [\da-f]{1,4}
+        |
+         ( (?: [\da-f]{1,4} : ){6} )
+          (\d+) \. (\d+) \. (\d+) \. (\d+)
+        )
+        \z
+      }xi
+
+      # Regexp _internally_ used for parsing IPv6 address.
+      RE_IPV6ADDRLIKE_COMPRESSED = %r{
+        \A
+        ( (?: (?: [\da-f]{1,4} : )* [\da-f]{1,4} )? )
+        ::
+        ( (?:
+          ( (?: [\da-f]{1,4} : )* )
+          (?:
+            [\da-f]{1,4}
+         |
+            (\d+) \. (\d+) \. (\d+) \. (\d+)
+          )
+        )? )
+        \z
+      }xi
+
+      def parse_string(left)
+        case left
+        when RE_IPV6ADDRLIKE_FULL
+          if $2
+            addr = in_addr($~[2,4])
+            left = $1 + ':'
+          else
+            addr = 0
+          end
+          right = ''
+        when RE_IPV6ADDRLIKE_COMPRESSED
+          if $4
+            left.count(':') <= 6 or raise InvalidAddressError, "invalid address"
+            addr = in_addr($~[4,4])
+            left = $1
+            right = $3 + '0:0'
+          else
+            left.count(':') <= ($1.empty? || $2.empty? ? 8 : 7) or
+              raise InvalidAddressError, "invalid address"
+            left = $1
+            right = $2
+            addr = 0
+          end
+        else
+          raise InvalidAddressError, "invalid address"
+        end
+        l = left.split(':')
+        r = right.split(':')
+        rest = 8 - l.size - r.size
+        if rest < 0
+          return nil
+        end
+        (l + Array.new(rest, '0') + r).inject(0) { |i, s|
+          i << 16 | s.hex
+        } | addr
+      end
+  end
+
 
   class UnsignedInteger < Integer
     def initialize(value)
