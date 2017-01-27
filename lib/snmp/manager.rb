@@ -459,6 +459,109 @@ module SNMP
     end
 
     ##
+    # Walks a list of ObjectId or VarBind objects using get_bulk until
+    # the response to the first OID in the list reaches the end of its
+    # MIB subtree.
+    #
+    # Using bulk walk, is way more efficient than using standard walk,
+    # as more data is received with each packet. bulk walk is only supported
+    # on SNMPv2c though.
+    #
+    # The varbinds from each get_bulk are yielded to the given block as
+    # they are retrieved. As bulk requests returns multiple "rows" in each
+    # packet, the rows is split and yielded one at a time. The result is
+    # yielded as a VarBind when walking a single object or as a VarBindList
+    # when walking a list of objects.
+    #
+    # Normally this method is used for walking tables by providing an
+    # ObjectId for each column of the table.
+    #
+    # For example:
+    #
+    #   SNMP::Manager.open(:host => "localhost") do |manager|
+    #     manager.bulk_walk("ifTable") { |vb| puts vb }
+    #   end
+    #
+    #   SNMP::Manager.open(:host => "localhost") do |manager|
+    #     manager.bulk_walk(["ifIndex", "ifDescr"]) do |index, descr|
+    #       puts "#{index.value} #{descr.value}"
+    #     end
+    #   end
+    #
+    # The index_column identifies the column that will provide the index
+    # for each row.  This information is used to deal with "holes" in a
+    # table (when a row is missing a varbind for one column).  A missing
+    # varbind is replaced with a varbind with the value NoSuchInstance.
+    #
+    # The max_repetitions specifies how "large" packages that should be
+    # received at a time, how many "rows" if you may. Beware that devices
+    # has different support for how much data it can send at a time. 10
+    # seems to be a good value.
+    #
+    # Note: If you are getting back rows where all columns have a value of
+    # NoSuchInstance then your index column is probably missing one of the
+    # rows.  Choose an index column that includes all indexes for the table.
+    #
+    def bulk_walk(object_list, index_column=0, max_repetitions=10)
+      raise ArgumentError, "expected a block to be given" unless block_given?
+      vb_list = @mib.varbind_list(object_list, :NullValue)
+      raise ArgumentError, "index_column is past end of varbind list" if index_column >= vb_list.length
+      is_single_vb = object_list.respond_to?(:to_str) || object_list.respond_to?(:to_varbind)
+      start_list = vb_list
+      start_oid = vb_list[index_column].name
+      last_oid = start_oid
+
+      # setup table where data will be put in columns
+      table = {}
+      start_list.each_with_index {|l,i| table[i] = []}
+
+      # use continue flag to break outer loop, also from yields
+      continue = true
+      while continue do
+        get_bulk(0, max_repetitions, vb_list).vb_list.each_slice(start_list.size) do |slice|
+          # if we break after this, outer loop dosn't continue
+          continue = false
+
+          # setup vb_list and check if we have reached the end
+          vb_list = VarBindList.new(slice)
+          index_vb = vb_list[index_column]
+          break if EndOfMibView == index_vb.value
+          stop_oid = index_vb.name
+          break if stop_oid <= last_oid or not stop_oid.subtree_of?(start_oid)
+          last_oid = stop_oid
+
+          # each vb is but in the table columns
+          # had to .dup varbinds as some of them would get a null value, don't know why
+          # but .dup fixes that
+          vb_list.each_with_index {|vb,i| table[i] << vb.dup}
+
+          # build a row from the first value in each table column, only
+          # shifting them from the table if the row index matches
+          # otherwise padding them with NoSuchInstance
+          row_index = index_vb.name.index(start_list[index_column].name)
+          row = table.keys.map do |i|
+            expected_oid = start_list[i].name + row_index
+            if table[i].first.name != expected_oid
+              VarBind.new(expected_oid, NoSuchInstance).with_mib(@mib)
+            else
+              table[i].shift
+            end
+          end
+
+          # validated validated varbind_list
+          if is_single_vb
+            yield row.first
+          else
+            yield VarBindList.new(row)
+          end
+
+          # good to go another round
+          continue = true
+        end
+      end
+    end
+
+    ##
     # Helper method for walk.  Checks all of the VarBinds in vb_list to
     # make sure that the row indices match.  If the row index does not
     # match the index column, then that varbind is replaced with a varbind
