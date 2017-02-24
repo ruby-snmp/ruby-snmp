@@ -112,7 +112,7 @@ module SNMP
       # known version of the tool is available.
       #
       def import_supported?
-        `smidump --version` =~ /^smidump 0.4/  && $? == 0
+        `smidump --version` =~ /^smidump 0.5/  && $? == 0
       end
 
       ##
