@@ -721,6 +721,7 @@ module SNMP
               @transport.send(message.response.encode, source_ip, source_port)
             end
             trap.source_ip = source_ip
+			trap.community = community
             select_handler(trap).call(trap)
           end
         rescue => e

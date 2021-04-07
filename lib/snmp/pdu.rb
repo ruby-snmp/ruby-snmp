@@ -279,6 +279,11 @@ module SNMP
     attr_accessor :source_ip
 
     ##
+    # Add community to the SNMP ObjectId
+    #
+    attr_accessor :community
+    
+    ##
     # Returns the value of the mandatory sysUpTime varbind for this trap.
     #
     # Throws InvalidTrapVarbind if the sysUpTime varbind is not present.
@@ -329,6 +334,11 @@ module SNMP
     # source IP address of the packet that delivered the trap.
     #
     attr_accessor :source_ip
+
+    ##
+    # Add community to the SNMP ObjectId
+    #
+    attr_accessor :community
 
     attr_accessor :enterprise
     attr_accessor :agent_addr
