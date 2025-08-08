@@ -1,5 +1,14 @@
 # Change Log
 
+## Changes for version 1.3.3:
+* Move web content to GitHub Pages https://github.com/ruby-snmp/ruby-snmp/pull/66
+* Modernize project structure: README, gemspec, Rakefile, and development dependencies https://github.com/ruby-snmp/ruby-snmp/pull/65
+  * This change includes: Ship license file in gem. https://github.com/ruby-snmp/ruby-snmp/pull/65
+* Migrate from Travis CI to GitHub Actions https://github.com/ruby-snmp/ruby-snmp/pull/64
+* Transfer repository from `hallidave/ruby-snmp` to `ruby-snmp/ruby-snmp` https://github.com/ruby-snmp/ruby-snmp/pull/63
+* Allow MIB dir to be specified when loading additional modules (Fixes: https://github.com/ruby-snmp/ruby-snmp/issues/55 )
+* Name lookup hash values were set to nil when overwriting (Fixes: https://github.com/ruby-snmp/ruby-snmp/issues/54 )
+
 ## Changes for version 1.3.2:
 * Accept non-standard error status codes
 
