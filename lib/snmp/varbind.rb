@@ -151,6 +151,11 @@ module SNMP
       each_byte { |b| oid << b }
       oid
     end
+
+    # Convert byte string to a formatted string
+    def to_fs
+      self.unpack1("H*")
+    end
   end
 
   class ObjectId < Array

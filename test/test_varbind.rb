@@ -107,6 +107,9 @@ class TestVarBind < Minitest::Test
     assert_equal("test", string.to_s)
     assert_equal("\004\004test", string.encode)
     refute_nil(string.asn1_type)
+
+    string2 = OctetString.new("\x01\x23\x45\x67\x89\xab\xcd\xef\x01\x23\x45")
+    assert_equal("0123456789abcdef012345", string2.to_fs)
   end
 
   def test_octet_string_equals
