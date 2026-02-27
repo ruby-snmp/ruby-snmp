@@ -1,5 +1,13 @@
 # Change Log
 
+## Changes for version 1.3.4:
+* Add `OctetString#to_fs` for human-readable byte strings https://github.com/ruby-snmp/ruby-snmp/pull/73
+* gemspec: Require MFA for gem releases https://github.com/ruby-snmp/ruby-snmp/pull/69
+* gemspec: Update path for CHANGELOG link https://github.com/ruby-snmp/ruby-snmp/pull/68
+* CI: Add Ruby 4.0 to CI Matrix https://github.com/ruby-snmp/ruby-snmp/pull/72
+* CI: Bump actions/checkout from 5 to 6 https://github.com/ruby-snmp/ruby-snmp/pull/71
+* CI: Bump actions/checkout from 4 to 5 https://github.com/ruby-snmp/ruby-snmp/pull/70
+
 ## Changes for version 1.3.3:
 * Move web content to GitHub Pages https://github.com/ruby-snmp/ruby-snmp/pull/66
 * Modernize project structure: README, gemspec, Rakefile, and development dependencies https://github.com/ruby-snmp/ruby-snmp/pull/65
